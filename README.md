@@ -1,4 +1,4 @@
-# Order Payment REST API with RabbitMQ Integration
+# NGINX Setup and Configuration on WSL (Ubuntu)
 
 ## 📖 Overview  
 
@@ -171,7 +171,7 @@ sudo nano /etc/nginx/custom-maps/allowed-origins.conf
 ```
 Example inside `allowed-origins.conf`:  
 
-```nginx
+```bash
 map $http_origin $is_origin_allowed {
     default 0;
     "https://yourdomain.com" 1;
@@ -186,7 +186,7 @@ sudo nano /etc/nginx/custom-maps/allowed-referrer.conf
 ```
 Example inside `allowed-referrer.conf`:  
 
-```nginx
+```bash
 map $http_referer $is_referer_allowed {
     default 0;
     ~^https://trusted\.com(/.*)?$ 1;
@@ -202,7 +202,7 @@ sudo nano /etc/nginx/custom-maps/user-agent-detect.conf
 
 Example inside `user-agent-detect.conf`:  
 
-```nginx
+```bash
 map $http_user_agent $is_browser {
     default 0;
     ~*mozilla 1;
@@ -222,7 +222,7 @@ sudo nano /etc/nginx/nginx.conf
 
 include the map file:  
 
-```nginx
+```bash
 http {
     include /etc/nginx/custom-maps/*.conf;
 
@@ -253,7 +253,7 @@ sudo nano /etc/nginx/snippets/security-headers.conf
 
 Example inside `security-headers.conf`:  
 
-```nginx
+```bash
 # Prevent clickjacking attacks by disallowing the site to be embedded in a frame or iframe
 add_header X-Frame-Options "SAMEORIGIN" always;
 
@@ -282,7 +282,7 @@ sudo nano /etc/nginx/snippets/cors-headers.conf
 
 Example inside `cors-headers.conf`:  
 
-```nginx
+```bash
 # Dynamically allow the origin based on $cors_origin (mapped earlier)
 add_header Access-Control-Allow-Origin $http_origin always;
 
@@ -307,7 +307,7 @@ Use the `include` directive to reuse the snippet file in a server block or locat
 
 Inside `server` block:  
 
-```nginx
+```bash
 include snippets/security-headers.conf;
 include snippets/cors-headers.conf;
 ```
@@ -320,7 +320,7 @@ Used to control incoming request rate to prevent abuse or overload (e.g. DDoS mi
 
 Add this inside your `http` block in `nginx.conf`:  
 
-    ```nginx
+    ```bash
     limit_req_zone $binary_remote_addr zone=api_limit:10m rate=1r/s;
     ```  
 
@@ -331,7 +331,7 @@ Add this inside your `http` block in `nginx.conf`:
 #### 2. Apply Limits in Specific Server Block or Location  
 Inside a specific server or location block:  
 
-    ```nginx
+    ```bash
     limit_req zone=api_limit;
     limit_req_status 429;
     ```
@@ -352,7 +352,7 @@ sudo nano /etc/nginx/sites-available/api-example
 Define the basic server block structure, using port 443 for HTTPS.  
 
 Example:  
-```nginx
+```bash
 server {
     listen 443 ssl http2;
     server_name api.example.com;
@@ -378,7 +378,7 @@ server {
 Enable SSL (HTTPS) by specifying the certificate and private key. **SSL/TLS** encrypts communication between the client and server, ensuring data privacy and integrity—essential for securing API traffic. Store your certificate files in the custom directory `/etc/nginx/ssl/` for better organization and permission control.  
 
 Example:  
-```nginx
+```bash
 ssl_certificate     /etc/nginx/ssl/api-example.crt;
 ssl_certificate_key /etc/nginx/ssl/api-example.key;
 ```  
@@ -387,7 +387,7 @@ ssl_certificate_key /etc/nginx/ssl/api-example.key;
 Reuse your predefined `security-headers.conf` and `cors-headers.conf`. This simplifies adding HTTP security headers and CORS rules.  
 
 Example:  
-```nginx
+```bash
 include snippets/security-headers.conf;
 include snippets/cors-headers.conf;
 ```
@@ -396,12 +396,12 @@ include snippets/cors-headers.conf;
 Control the number of requests from a client using the `limit_req` directive. Protects your API from abuse and brute-force attacks.  
 
 Example (in `nginx.conf` http block):  
-```nginx
+```bash
 limit_req_zone $binary_remote_addr zone=api_limit:10m rate=1r/s;
 ```
 
 In server block:  
-```nginx
+```bash
 limit_req zone=api_limit;
 limit_req_status 429;
 ```  
@@ -415,7 +415,7 @@ Steps to **Customize Error Responses**:
 
 Example of Custom Error Pages:  
 Here are examples of how to handle various HTTP error responses:  
-```nginx
+```bash
 # --- Custom Error Pages ---
 
 # Customize 301 error response globally or per server
@@ -495,7 +495,7 @@ location @json_429 {
 We can perform basic security validation for incoming requests by inspecting certain headers, like `Origin`, `Referer`, and `User-Agent`. This ensures that only requests from valid sources and browsers are allowed. If any of the checks fail, you can deny access by returning an HTTP 403 status.  
 
 Example Origin & Browser Validation:  
-```nginx
+```bash
 # --- Origin & Browser Validation ---
 
 # If the 'Origin' header is missing from the request, deny access
@@ -567,7 +567,7 @@ Best Practice: Always run `nginx -t` before applying `reload`, especially when e
 
 
 
-### G. Spring Boot Integration  
+### G. Spring Boot Configuration  
 
 1. Clone the Project  
 
@@ -602,7 +602,13 @@ You can test the API using: Postman (Desktop/Web version) or cURL
 
 This section outlines test scenarios for verifying that your NGINX configuration works as expected. These include reverse proxy setup, validation mechanisms, rate limiting, and custom error responses. All test cases below are designed to be executed using **Postman**, a powerful API testing tool.  
 
-**📝 Note**: Ensure Postman is installed on your system. You can download it from [Download Postman](https://www.postman.com/downloads/).  
+**📝 Note**: 
+- Ensure Postman is installed on your system. You can download it from [Download Postman](https://www.postman.com/downloads/).  
+- I have mapped my WSL IP to `host.wsl.internal` in my Windows `hosts` file (`C:\Windows\System32\drivers\etc\hosts`), like:  
+```bash
+111.22.333.444 host.wsl.internal
+```  
+**This allows testing from Windows-based tools (like Postman) to reach NGINX running inside WSL using `https://host.wsl.internal`.**
 
 ### 1. Reverse Proxy Test  
 **Goal**: Confirm NGINX is forwarding requests to the backend server properly.  
