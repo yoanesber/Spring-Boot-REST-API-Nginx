@@ -1,6 +1,6 @@
-# Running Quarkus in development mode
+# Running in development mode
 dev:
-	@echo "Running Quarkus in development mode..."
+	@echo "Running in development mode..."
 	./mvnw spring-boot:run
 
 # Building the application as a JAR file
