@@ -40,10 +40,10 @@ The project is organized into the following package structure:
 
 ```bash
 rest-api-nginx-backend/
-│── src/main/java/com/yoanesber/rest_api_nginx_backend/
-│   ├── 📂controller/            # Defines REST API endpoints for handling order payment requests, acting as the entry point for client interactions.
-│   ├── 📂dto/                   # Contains Data Transfer Objects used for API request and response models, such as creating an order payment.
-│   ├── 📂entity/                # Includes CustomHttpResponse entity only as which represents the response message structures.
+└── src/main/java/com/yoanesber/rest_api_nginx_backend/
+    ├── 📂controller/            # Defines REST API endpoints for handling order payment requests, acting as the entry point for client interactions.
+    ├── 📂dto/                   # Contains Data Transfer Objects used for API request and response models, such as creating an order payment.
+    └── 📂entity/                # Includes CustomHttpResponse entity only as which represents the response message structures.
 ```
 ---
 
