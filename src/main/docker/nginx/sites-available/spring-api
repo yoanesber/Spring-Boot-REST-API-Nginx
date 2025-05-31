@@ -1,0 +1,172 @@
+# Spring API Server Block
+server {
+    # listen 1000;		# Listen on IPv4 port 1000
+    # listen [::]:1000;		# Listen on IPv6 port 1000
+
+    # Listen on port 443 (the default port for HTTPS) with SSL enabled
+    listen 443 ssl;		# Listen on IPv4 port 443
+
+    server_name localhost;	# Respond only to requests for this specific server IP address
+
+    # --- SSL Config ---
+
+    # Path to the SSL certificate (public key) file
+    ssl_certificate /etc/nginx/ssl/selfsigned.crt;
+
+    # Path to the SSL private key file (must match the certificate above)
+    ssl_certificate_key /etc/nginx/ssl/selfsigned.key;
+
+    # Define which SSL/TLS protocols are allowed
+    # Only allow TLS 1.2 and TLS 1.3 (secure and widely supported)
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    # Set of allowed SSL ciphers (encryption algorithms)
+    # 'HIGH' = strong ciphers
+    # '!aNULL' = exclude ciphers with no authentication
+    # '!MD5' = exclude old MD5-based ciphers (considered insecure)
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # --- Security Headers ---
+
+    include snippets/security-headers.conf;
+    include snippets/cors-headers.conf;
+
+    # --- Origin & Browser Validation ---
+
+    # If the 'Origin' header is missing from the request, deny access
+    if ($http_origin = "") {
+        return 403;
+    }
+
+    # If the 'Origin' is not in the allowed list (via $is_origin_allowed), deny access
+    if ($is_origin_allowed = 0) {
+        return 403;
+    }
+
+    # Optional Referer validation (commented out): If the 'Referer' header is missing, deny access
+    # if ($http_referer = "") {
+    #     return 403;
+    # }
+
+    # If the 'Referer' is not in the allowed list (via $is_referer_allowed), deny access
+    # if ($is_referer_allowed = 0) {
+    #     return 403;
+    # }
+
+    # If the request is not from a browser (determined via $is_browser map logic), deny access
+    if ($is_browser = 0) {
+        return 403;
+    }
+
+    # Handle CORS Preflight Request (sent automatically by browsers before actual request)
+    if ($request_method = 'OPTIONS') {
+        # Respond with 204 No Content to tell browser everything's OK (no body content needed)
+        return 204;
+    }
+
+    # Limit the maximum allowed size of a client's request body, typically for POST, PUT, or PATCH requests
+    # For example when uploading files or sending large JSON payloads
+    client_max_body_size 100M;
+
+    # Controls whether or not the server includes its version number in error pages and response headers
+    server_tokens off;
+
+    # More strict by restricting any files starting with dot, like: .env, .htaccess, or .git/config
+    # When someone tries to access a dotfile, NGINX will return 403 Forbidden
+    location ~ /\. {
+        deny all;
+    }
+
+    # --- Proxy Logic ---
+
+    location / {
+        # Rate limit based on IP address
+        limit_req zone=api_limit;
+        limit_req_status 429;
+
+        # Check if Authorization token is missing
+        # If the Authorization header is empty, return a 401 Unauthorized error with a JSON response
+        if ($http_authorization = "") {
+            return 401;
+        }
+
+        proxy_pass http://rest-nginx-app:8081;		# Forward the request to the backend
+        proxy_set_header Host $host;                    # Preserve the original Host header
+        proxy_set_header X-Real-IP $remote_addr;        # Preserve the original client IP address
+    }
+
+    # --- Custom Error ---
+
+    # Customize 301 error response globally or per server
+    error_page 301 = @json_301;
+    location @json_301 {
+        default_type application/json;
+        return 301 '{
+            "timestamp": "$time_iso8601",
+            "status": 301,
+            "error": "Moved Permanently",
+            "path": "$request_uri"
+        }';
+    }
+
+    # Customize 401 error response globally or per server
+    error_page 401 = @json_401;
+    location @json_401 {
+        default_type application/json;
+        return 401 '{
+            "timestamp": "$time_iso8601",
+            "status": 401,
+            "error": "Missing Authorization token",
+            "path": "$request_uri"
+        }';
+    }
+
+
+    # Customize 403 error response globally or per server
+    error_page 403 = @json_403;
+    location @json_403 {
+        default_type application/json;
+        return 403 '{
+            "timestamp": "$time_iso8601",
+            "status": 403,
+            "error": "Access Denied",
+            "path": "$request_uri"
+        }';
+    }
+
+    # Customize 405 error response globally or per server
+    error_page 405 = @json_405;
+    location @json_405 {
+        default_type application/json;
+        return 405 '{
+            "timestamp": "$time_iso8601",
+            "status": 405,
+            "error": "Method Not Allowed",
+            "path": "$request_uri"
+        }';
+    }
+
+    # Customize 413 error response globally or per server
+    error_page 413 = @json_413;
+    location @json_413 {
+        default_type application/json;
+        return 413 '{
+            "timestamp": "$time_iso8601",
+            "status": 413,
+            "error": "Request Entity Too Large",
+            "path": "$request_uri"
+        }';
+    }
+
+    # Customize 429 error response globally or per server
+    error_page 429 = @json_429;
+    location @json_429 {
+        default_type application/json;
+        return 429 '{
+            "timestamp": "$time_iso8601",
+            "status": 429,
+            "error": "Too many requests, please slow down",
+            "path": "$request_uri"
+        }';
+    }
+}

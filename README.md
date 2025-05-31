@@ -28,22 +28,32 @@ Below are the core features that make this solution robust and ready for real-wo
 
 The technology used in this project are:  
 
-- `Spring Boot Starter Web` — Building RESTful APIs or web applications.  
-- `Lombok` — Reducing boilerplate code.  
-- `NGINX` — used as reverse proxy, SSL terminator, request filter, and rate limiter.  
-- `WSL (Windows Subsystem for Linux)` — runtime environment for NGINX on Windows.  
+| Technology                            | Description                                                                   |
+|---------------------------------------|-------------------------------------------------------------------------------|
+| `Spring Boot Starter Web`             | Building RESTful APIs or web applications.                                    |
+| `Lombok`                              | Reducing boilerplate code like getters, setters, and constructors.            |
+| `NGINX`                               | Used as a reverse proxy, SSL terminator, request filter, and rate limiter.    |
+| `WSL (Windows Subsystem for Linux)`   | Runtime environment for NGINX on Windows.                                     |
+
 ---
 
-## 🏗️ Project Structure  
+## 🧱 Architecture Overview  
 
 The project is organized into the following package structure:  
 
 ```bash
-rest-api-nginx-backend/
-└── src/main/java/com/yoanesber/rest_api_nginx_backend/
-    ├── 📂controller/            # Defines REST API endpoints for handling order payment requests, acting as the entry point for client interactions.
-    ├── 📂dto/                   # Contains Data Transfer Objects used for API request and response models, such as creating an order payment.
-    └── 📂entity/                # Includes CustomHttpResponse entity only as which represents the response message structures.
+📁 rest-api-nginx-backend/
+└── 📂src/
+    └── 📂main/
+        ├── 📂docker/
+        │   ├── 📂app/                  # Dockerfile for Spring Boot application (runtime container)
+        │   └── 📂nginx/                # Custom Nginx Docker image (optional)
+        ├── 📂java/
+        │   ├── 📂controller/           # Defines REST API endpoints for handling order payment requests, acting as the entry point for client interactions.
+        │   ├── 📂dto/                  # Contains Data Transfer Objects used for API request and response models, such as creating an order payment.
+        │   └── 📂entity/               # Includes CustomHttpResponse entity only as which represents the response message structures.
+        └── 📂resources/
+            └── application.properties  # Application configuration (port, app name, etc.)
 ```
 ---
 
@@ -581,16 +591,42 @@ cd Spring-Boot-REST-API-Nginx
 
 2. Run the Spring Boot Application  
 
-Use Maven to start the application:  
+
+#### 🔧 Run Locally (Non-containerized)
 
 ```bash
-mvn spring-boot:run
+make dev
 ```
+
+#### 🐳 Run Using Docker
+
+To build and run all services (Nginx, Spring app):
+
+```bash
+make docker-up
+```
+
+To stop and remove all containers:
+
+```bash
+make docker-down
+```
+
+**⚠️ Note**:
+If you want to run the application with **Docker + SSL**, make sure that:
+- SSL certificate and key files are prepared manually in the following path (these are `.gitignore`-excluded):  
+
+```bash
+src/main/docker/nginx/ssl/selfsigned.crt  
+src/main/docker/nginx/ssl/selfsigned.key
+```
+- The NGINX configuration file at `src/main/docker/nginx/sites-available/spring-api` is properly updated to use the correct paths and filenames for your **SSL cert and key**. Otherwise, the container will fail to start or SSL will not be enabled properly.  
+
 
 Once started, the server should be accessible at:  
 
 ```bash
-http://localhost:8081/ 
+http://localhost:8080/ 
 ```
 
 You can test the API using: Postman (Desktop/Web version) or cURL
